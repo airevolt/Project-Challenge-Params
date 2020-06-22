@@ -3,7 +3,7 @@ const bodyParser = require('body-parser')
 const express = require('express')
 const app = express()
 const port = 3003
-const students = JSON.parse(fs.readFileSync('students.json'))
+let students = JSON.parse(fs.readFileSync('students.json'))
 app.use(bodyParser.json())
 app.use(express.json())
 
@@ -23,7 +23,7 @@ app.get('/grades/:studentId',(req,res) =>{
 
 })
 
-app.get('/search',(req,res) => {
+app.get('/students?search=<query>',(req,res) => {
     const query = decodeURIComponent(req.query.query)
     const filteredStudents = students.filter(student => student.includes(query))
     
@@ -31,25 +31,47 @@ app.get('/search',(req,res) => {
 });
 
 
-app.post('/send', function(req, res){
+app.post('/grades', function(req, res){
 let result;
 const studentSender = req.body
-if(studentSender.id && studentSender.grade && studentSender.name){
-    students.push({id:studentSender.id, grade:studentSender.grade, name:studentSender.name})
+if(studentSender.id && studentSender.grade){
+    let newStudentGrade = students.slice().filter(student => student.id === studentSender.id)[0]
+    newStudentGrade.grade = studentSender.grade
+    students = [...students.slice().filter(student => student.id !== studentSender.id), newStudentGrade]
     result = {
         "status": "success",
-        "message": "The message was successfully sent"
+        "message": "The grade was successfully changed" 
     }
 }else{ 
     result = {
         "status": "failed",
-        "message": "The message was not sent"
+        "message": "The grade was not changed"
     }
     res.status(400);
 }
 
 res.json(result);
 })
+
+app.post('/register', function(req, res){
+    let result;
+    const studentSender = req.body
+    if(studentSender.id && studentSender.grade && studentSender.name){
+        students.push({id:studentSender.id, grade:studentSender.grade, name:studentSender.name})
+        result = {
+            "status": "success",
+            "message": "The post was successfully sent"
+        }
+    }else{ 
+        result = {
+            "status": "failed",
+            "message": "The message was not sent"
+        }
+        res.status(400);
+    }
+    
+    res.json(result);
+    })
 
 
 app.listen(port, () => console.log('Listening now'))
